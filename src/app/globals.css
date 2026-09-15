@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Glow Studio's look: warm sand, soft violet, generous space.
+ *
+ * Editorial rather than corporate — a salon sells a feeling, and the page
+ * should have one. No web font is loaded; a blocked font request is a page
+ * that flashes, and the serif stack below is handsome everywhere.
+ */
+@layer base {
+  :root {
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-sand text-ink antialiased;
+    background-image: var(--grain);
+  }
+
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* Display type: a little tighter, and italic lowercase reads as couture. */
+  .display {
+    @apply font-display;
+    letter-spacing: -0.02em;
+  }
+
+  .eyebrow {
+    @apply text-2xs font-semibold uppercase tracking-[0.18em] text-glow-700;
+  }
+
+  .card {
+    @apply rounded-2xl border border-stone-200/80 bg-white/85 backdrop-blur-sm;
+    box-shadow:
+      0 1px 2px rgba(28, 25, 23, 0.04),
+      0 10px 30px -14px rgba(76, 29, 149, 0.16);
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 text-sm font-medium text-white;
+    background-image: linear-gradient(180deg, #8b5cf6, #6d28d9);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.25),
+      0 1px 2px rgba(76, 29, 149, 0.25),
+      0 12px 26px -14px rgba(109, 40, 217, 0.85);
+    transition: filter 160ms ease, transform 160ms ease;
+  }
+  .btn-primary:hover {
+    filter: brightness(1.06);
+  }
+  .btn-primary:active {
+    transform: translateY(1px);
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-stone-300 bg-white/70 px-7 text-sm font-medium text-ink backdrop-blur-sm;
+    transition: background-color 160ms ease, border-color 160ms ease;
+  }
+  .btn-ghost:hover {
+    @apply border-glow-300 bg-white;
+  }
+
+  /**
+   * Where a photograph goes.
+   *
+   * Deliberately a warm gradient wash rather than a grey box or a stock photo
+   * of someone else's salon. It looks composed on its own, and it is obvious
+   * to the owner that this is the slot for their own picture.
+   */
+  .photo-slot {
+    position: relative;
+    overflow: hidden;
+    background-image:
+      radial-gradient(120% 90% at 15% 10%, rgba(196, 181, 253, 0.85), transparent 60%),
+      radial-gradient(110% 80% at 85% 25%, rgba(251, 207, 232, 0.8), transparent 60%),
+      radial-gradient(130% 100% at 50% 100%, rgba(254, 226, 199, 0.9), transparent 65%),
+      linear-gradient(160deg, #efe9ff, #fdf4ec);
+  }
+  .photo-slot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--grain);
+    mix-blend-mode: multiply;
+  }
+}
