@@ -121,6 +121,12 @@ export default function HomePage() {
             ))}
           </div>
 
+          <Photo
+            src={PHOTOS.tools}
+            alt="Styling tools and products laid out on a tray"
+            className="mt-12 aspect-[16/9] rounded-2xl sm:aspect-[21/9]"
+          />
+
           <p className="mt-10 text-sm text-ink-muted">
             The full menu with exact prices is on the{' '}
             <a href="#book" className="font-medium text-glow-700 underline underline-offset-4">
@@ -138,16 +144,38 @@ export default function HomePage() {
           <h2 className="display mt-3 text-4xl">Who you&rsquo;ll be sitting with</h2>
         </div>
 
-        <div className="mt-12 grid gap-8 sm:grid-cols-3">
-          {TEAM.map((person) => (
-            <div key={person.name}>
-              <Photo src={person.photo} alt={`${person.name}, ${person.role}`} className="aspect-[4/5] rounded-2xl" />
-              <h3 className="display mt-4 text-xl">{person.name}</h3>
-              <p className="eyebrow mt-1">{person.role}</p>
-              <p className="mt-2 text-sm leading-relaxed text-ink-muted">{person.note}</p>
+        {/* One photograph when there are no headshots, three portraits when
+            there are. Three empty gradients next to two real photographs reads
+            as a website somebody abandoned halfway; this reads as a choice. */}
+        {TEAM.every((person) => !person.photo) ? (
+          <>
+            <Photo
+              src={PHOTOS.team}
+              alt={`A stylist at work at ${SALON.name}`}
+              className="mt-12 aspect-[16/9] rounded-2xl"
+            />
+            <div className="mt-10 grid gap-8 sm:grid-cols-3">
+              {TEAM.map((person) => (
+                <div key={person.name}>
+                  <h3 className="display text-xl">{person.name}</h3>
+                  <p className="eyebrow mt-1">{person.role}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-ink-muted">{person.note}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        ) : (
+          <div className="mt-12 grid gap-8 sm:grid-cols-3">
+            {TEAM.map((person) => (
+              <div key={person.name}>
+                <Photo src={person.photo} alt={`${person.name}, ${person.role}`} className="aspect-[4/5] rounded-2xl" />
+                <h3 className="display mt-4 text-xl">{person.name}</h3>
+                <p className="eyebrow mt-1">{person.role}</p>
+                <p className="mt-2 text-sm leading-relaxed text-ink-muted">{person.note}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* --------------------------------------------------------- reviews */}
@@ -164,6 +192,14 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* The shopfront, edge to edge. A picture of the actual door does more to
+          make somebody press Book than another paragraph would. */}
+      <Photo
+        src={PHOTOS.sign}
+        alt={`The sign outside ${SALON.name}`}
+        className="aspect-[5/2] w-full sm:aspect-[5/1.6]"
+      />
 
       {/* ----------------------------------------------------------- book */}
       {/* The form itself, on the page people actually land on. A "Book" button

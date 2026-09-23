@@ -43,9 +43,23 @@ export const SALON = {
  */
 export const PHOTOS = {
   /** Beside the headline. Portrait, about 4:5. */
-  hero: null as string | null,
+  hero: '/photos/hero.jpg' as string | null,
   /** The room itself, near "Come and see us". Landscape, about 5:4. */
-  interior: null as string | null,
+  interior: '/photos/interior.jpg' as string | null,
+  /** A wide band under "The menu" — tools, product, the texture of the work. */
+  tools: '/photos/tools.jpg' as string | null,
+  /**
+   * The people section.
+   *
+   * One wide photograph rather than three portraits, because there are no
+   * headshots. Three empty gradients beside two real photographs reads as a
+   * half-finished website; one good picture of somebody at work, with the names
+   * as text beneath, reads as a choice. Add headshots to TEAM[].photo and the
+   * three-portrait layout comes back on its own.
+   */
+  team: '/photos/team.jpg' as string | null,
+  /** The shopfront, as a full-width strip before the booking form. */
+  sign: '/photos/sign.jpg' as string | null,
 };
 
 export const TEAM = [
