@@ -1,7 +1,7 @@
 /**
  * Who this website belongs to, and how it reaches its own diary.
  *
- * Aster is a worked example of a CUSTOMER's site — its own name, its own
+ * Glow Studio is a worked example of a CUSTOMER's site — its own name, its own
  * colours, nothing of Parlon's on it. That is the point: a salon's website is
  * their brand, and the only trace of the software is that the booking form
  * knows which times are genuinely free.
@@ -17,7 +17,7 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.jharavi.i
 
 /** Copy that belongs to the salon, not to the software. */
 export const SALON = {
-  name: 'Aster Hair & Skin',
+  name: 'Glow Studio',
   tagline: 'A hair and skin studio in Bengaluru',
   intro:
     'We are a small team who would rather do a few things properly than everything at once. Colour, cuts and skin — and the time to actually talk about what you want before we start.',
