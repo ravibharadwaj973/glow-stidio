@@ -1,6 +1,6 @@
-# Glow Studio — a salon website that books into Salon OS
+# Aster Hair & Skin — a worked example of a salon website that books into Parlon
 
-An example of what a salon running on Salon OS puts in front of its own
+An example of what a salon running on Parlon puts in front of its own
 customers: their brand, their words, and a booking form that writes straight
 into their diary. Port **3003**.
 
@@ -43,8 +43,8 @@ whichever salon the slug points at.
 
 | Variable | Default | What it is |
 |---|---|---|
-| `NEXT_PUBLIC_SALON_SLUG` | `glow-studio` | Which salon's diary this books into |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:4000/api/v1` | The Salon OS API |
+| `NEXT_PUBLIC_SALON_SLUG` | `parlon` | Which salon's diary this books into |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:4000/api/v1` | The Parlon API |
 
 ## CORS
 

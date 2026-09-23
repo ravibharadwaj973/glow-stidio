@@ -1,7 +1,7 @@
 import type { Config } from 'tailwindcss';
 
 /**
- * Glow Studio's own colours — deliberately nothing like Salon OS's.
+ * Glow Studio's own colours — deliberately nothing like Parlon's.
  *
  * This is the salon's website, not the software's. A customer booking a
  * haircut should never see a hint of the system behind the counter.

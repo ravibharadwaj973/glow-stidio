@@ -3,7 +3,7 @@ import { API_URL, SALON_SLUG } from './salon';
 /**
  * THE ONLY CONNECTION BETWEEN THIS WEBSITE AND THE SALON'S SYSTEM.
  *
- * Everything here hits the public, unauthenticated part of the Salon Grow API,
+ * Everything here hits the public, unauthenticated part of the Parlon API,
  * scoped by the salon's slug. There is no key in this website and no login —
  * these four endpoints are the whole surface:
  *

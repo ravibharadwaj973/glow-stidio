@@ -1,8 +1,8 @@
 {
-  "name": "glow-studio-website",
+  "name": "aster-salon-website",
   "version": "1.0.0",
   "private": true,
-  "description": "Salon OS — Glow Studio — the salon's own website, booking into Salon OS",
+  "description": "Aster Hair & Skin — an example salon website that books into Parlon",
   "scripts": {
     "dev": "next dev -p 3003",
     "build": "next build",
