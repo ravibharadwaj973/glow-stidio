@@ -30,8 +30,41 @@ export const SALON = {
   ],
 } as const;
 
+/**
+ * The salon's photographs.
+ *
+ * Put the files in `public/photos/` and name them here. A slot left null keeps
+ * the gradient, which is why this ships with nothing set: an empty gradient
+ * reads as a design choice, while a broken image reads as a broken website.
+ *
+ * Use the salon's own pictures. A stock photograph of somebody else's salon is
+ * worse than no photograph — a customer who walks in and finds a different room
+ * has been told something untrue before they sat down.
+ */
+export const PHOTOS = {
+  /** Beside the headline. Portrait, about 4:5. */
+  hero: null as string | null,
+  /** The room itself, near "Come and see us". Landscape, about 5:4. */
+  interior: null as string | null,
+};
+
 export const TEAM = [
-  { name: 'Priya Sharma', role: 'Founder & Colour Specialist', note: 'Fourteen years, most of them spent on balayage and colour correction.' },
-  { name: 'Rahul Verma', role: 'Senior Stylist', note: 'Precision cuts, and the person to ask if you are changing your look entirely.' },
-  { name: 'Ananya Rao', role: 'Skin Therapist', note: 'Facials and skin consultations. Will tell you honestly if you do not need a treatment.' },
-] as const;
+  {
+    name: 'Priya Sharma',
+    role: 'Founder & Colour Specialist',
+    note: 'Fourteen years, most of them spent on balayage and colour correction.',
+    photo: null as string | null,
+  },
+  {
+    name: 'Rahul Verma',
+    role: 'Senior Stylist',
+    note: 'Precision cuts, and the person to ask if you are changing your look entirely.',
+    photo: null as string | null,
+  },
+  {
+    name: 'Ananya Rao',
+    role: 'Skin Therapist',
+    note: 'Facials and skin consultations. Will tell you honestly if you do not need a treatment.',
+    photo: null as string | null,
+  },
+];

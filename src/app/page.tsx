@@ -1,6 +1,7 @@
 import { ArrowRight, Clock, MapPin, Phone, Quote, Star } from 'lucide-react';
 import { Booking } from '@/components/booking';
-import { SALON, TEAM } from '@/lib/salon';
+import { SALON, TEAM, PHOTOS } from '@/lib/salon';
+import { Photo } from '@/components/photo';
 
 /**
  * The salon's own website.
@@ -80,7 +81,11 @@ export default function HomePage() {
 
           {/* Hero photograph */}
           <div className="relative">
-            <div className="photo-slot aspect-[4/5] rounded-[2rem] shadow-[0_24px_60px_-24px_rgba(76,29,149,0.35)]" />
+            <Photo
+              src={PHOTOS.hero}
+              alt={`Inside ${SALON.name}`}
+              className="aspect-[4/5] rounded-[2rem] shadow-[0_24px_60px_-24px_rgba(76,29,149,0.35)]"
+            />
             {/* A small card layered over the corner, the way a magazine would */}
             <div className="card absolute bottom-6 -left-4 w-52 p-4 sm:-left-10">
               <p className="display text-2xl">7 years</p>
@@ -136,7 +141,7 @@ export default function HomePage() {
         <div className="mt-12 grid gap-8 sm:grid-cols-3">
           {TEAM.map((person) => (
             <div key={person.name}>
-              <div className="photo-slot aspect-[4/5] rounded-2xl" />
+              <Photo src={person.photo} alt={`${person.name}, ${person.role}`} className="aspect-[4/5] rounded-2xl" />
               <h3 className="display mt-4 text-xl">{person.name}</h3>
               <p className="eyebrow mt-1">{person.role}</p>
               <p className="mt-2 text-sm leading-relaxed text-ink-muted">{person.note}</p>
@@ -230,7 +235,11 @@ export default function HomePage() {
             </a>
           </div>
 
-          <div className="photo-slot aspect-[5/4] rounded-[2rem] shadow-[0_24px_60px_-24px_rgba(76,29,149,0.3)]" />
+          <Photo
+            src={PHOTOS.interior}
+            alt={`The studio at ${SALON.name}`}
+            className="aspect-[5/4] rounded-[2rem] shadow-[0_24px_60px_-24px_rgba(76,29,149,0.3)]"
+          />
         </div>
       </section>
     </main>
