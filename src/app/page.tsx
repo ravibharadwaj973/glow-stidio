@@ -1,7 +1,19 @@
+import Link from 'next/link';
 import { ArrowRight, Clock, MapPin, Phone, Quote, Star } from 'lucide-react';
 import { Booking } from '@/components/booking';
-import { SALON, TEAM, PHOTOS } from '@/lib/salon';
+import { SALON, SERVICES, TEAM, PHOTOS } from '@/lib/salon';
 import { Photo } from '@/components/photo';
+import { populatedCollections } from '@/lib/gallery';
+
+/**
+ * Whether there is anything on the gallery page worth sending somebody to.
+ *
+ * Checked rather than assumed: a prominent “see our work” link that leads to
+ * an apology is worse than no link, and the gallery ships empty of service
+ * photographs on purpose. It appears by itself the moment real pictures are
+ * added to lib/gallery.ts.
+ */
+const GALLERY_READY = populatedCollections().length > 0;
 
 /**
  * The salon's own website.
@@ -16,14 +28,6 @@ import { Photo } from '@/components/photo';
  * salon — honest about being a placeholder, and presentable until replaced.
  */
 
-const SERVICES = [
-  { name: 'Cut & finish', from: '₹800', note: 'A consultation first, always. Wash, cut and a proper finish.' },
-  { name: 'Colour', from: '₹2,500', note: 'Global, root touch-up, balayage and colour correction.' },
-  { name: 'Hair treatments', from: '₹1,500', note: 'Keratin, botox and deep conditioning for tired hair.' },
-  { name: 'Facials & skin', from: '₹1,200', note: 'Cleanups, hydrating facials, and honest advice about what you need.' },
-  { name: 'Threading & waxing', from: '₹150', note: 'Quick, careful, and no queue if you book ahead.' },
-  { name: 'Bridal & occasion', from: '₹6,000', note: 'A trial, then the day itself. Booked well in advance, please.' },
-];
 
 const REVIEWS = [
   {
@@ -126,6 +130,20 @@ export default function HomePage() {
             alt="Styling tools and products laid out on a tray"
             className="mt-12 aspect-[16/9] rounded-2xl sm:aspect-[21/9]"
           />
+
+          {/* A route to the work, from the menu.
+              This is the point on the page where somebody has read that
+              colour starts at ₹2,500 and is deciding whether this salon can
+              do colour. A price list cannot answer that; the gallery can. */}
+          {GALLERY_READY ? (
+            <Link
+              href="/gallery"
+              className="mt-10 inline-flex items-center gap-2 text-sm font-medium text-glow-700 hover:underline"
+            >
+              See what this looks like on real heads
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          ) : null}
 
           <p className="mt-10 text-sm text-ink-muted">
             The full menu with exact prices is on the{' '}

@@ -31,6 +31,24 @@ export const SALON = {
 } as const;
 
 /**
+ * The menu.
+ *
+ * Lives here rather than on the homepage because the gallery groups its
+ * pictures by service, and two lists of service names drift the moment
+ * somebody renames one: a category called “Hair colour” above a menu item
+ * called “Colour” reads as two different services to a customer choosing
+ * between them.
+ */
+export const SERVICES = [
+  { name: 'Cut & finish', from: '₹800', note: 'A consultation first, always. Wash, cut and a proper finish.' },
+  { name: 'Colour', from: '₹2,500', note: 'Global, root touch-up, balayage and colour correction.' },
+  { name: 'Hair treatments', from: '₹1,500', note: 'Keratin, botox and deep conditioning for tired hair.' },
+  { name: 'Facials & skin', from: '₹1,200', note: 'Cleanups, hydrating facials, and honest advice about what you need.' },
+  { name: 'Threading & waxing', from: '₹150', note: 'Quick, careful, and no queue if you book ahead.' },
+  { name: 'Bridal & occasion', from: '₹6,000', note: 'A trial, then the day itself. Booked well in advance, please.' },
+] as const;
+
+/**
  * The salon's photographs.
  *
  * Put the files in `public/photos/` and name them here. A slot left null keeps
