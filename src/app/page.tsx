@@ -3,17 +3,9 @@ import { ArrowRight, Clock, MapPin, Phone, Quote, Star } from 'lucide-react';
 import { Booking } from '@/components/booking';
 import { SALON, SERVICES, TEAM, PHOTOS } from '@/lib/salon';
 import { Photo } from '@/components/photo';
-import { populatedCollections } from '@/lib/gallery';
-
-/**
- * Whether there is anything on the gallery page worth sending somebody to.
- *
- * Checked rather than assumed: a prominent “see our work” link that leads to
- * an apology is worse than no link, and the gallery ships empty of service
- * photographs on purpose. It appears by itself the moment real pictures are
- * added to lib/gallery.ts.
- */
-const GALLERY_READY = populatedCollections().length > 0;
+import { resolveCollections } from '@/lib/gallery';
+import { feedbackSection } from '@/lib/api';
+import { FeedbackBlock } from '@/components/feedback';
 
 /**
  * The salon's own website.
@@ -44,7 +36,24 @@ const REVIEWS = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  /**
+   * Whether there is anything on the gallery page worth sending somebody to.
+   *
+   * Checked rather than assumed: a prominent “see our work” link that leads to
+   * an apology is worse than no link. The call is the same cached one the
+   * gallery page makes, so this costs nothing extra.
+   */
+  const [collections, feedback] = await Promise.all([resolveCollections(), feedbackSection()]);
+  const galleryReady = collections.length > 0;
+
+  /**
+   * Shown when the salon has switched the form on, or has reviews to show.
+   * Neither on its own is a reason to draw an empty section, and both are
+   * decided in the salon's own app rather than here.
+   */
+  const showFeedback = Boolean(feedback && (feedback.config.enabled || feedback.reviews.length > 0));
+
   return (
     <main>
       {/* ------------------------------------------------------------ hero */}
@@ -135,7 +144,7 @@ export default function HomePage() {
               This is the point on the page where somebody has read that
               colour starts at ₹2,500 and is deciding whether this salon can
               do colour. A price list cannot answer that; the gallery can. */}
-          {GALLERY_READY ? (
+          {galleryReady ? (
             <Link
               href="/gallery"
               className="mt-10 inline-flex items-center gap-2 text-sm font-medium text-glow-700 hover:underline"
@@ -197,19 +206,31 @@ export default function HomePage() {
       </section>
 
       {/* --------------------------------------------------------- reviews */}
-      <section className="border-y border-stone-200 bg-white">
-        <div className="mx-auto max-w-6xl px-5 py-20">
-          <div className="grid gap-8 sm:grid-cols-3">
-            {REVIEWS.map((review) => (
-              <figure key={review.name}>
-                <Quote className="h-5 w-5 text-glow-300" />
-                <blockquote className="mt-3 text-base leading-relaxed text-ink">&ldquo;{review.text}&rdquo;</blockquote>
-                <figcaption className="mt-3 text-sm text-ink-subtle">{review.name}</figcaption>
-              </figure>
-            ))}
+      {/* REAL ONES WHERE THERE ARE REAL ONES.
+          The three hardcoded quotes below are placeholder copy that shipped
+          with this template. Once the salon has published any feedback of
+          their own, the written-in ones are gone — a page showing invented
+          testimonials next to genuine ones is worse than either alone, and
+          the invented ones are the half a customer cannot check. */}
+      {showFeedback ? (
+        <FeedbackBlock section={feedback!} />
+      ) : (
+        <section className="border-y border-stone-200 bg-white">
+          <div className="mx-auto max-w-6xl px-5 py-20">
+            <div className="grid gap-8 sm:grid-cols-3">
+              {REVIEWS.map((review) => (
+                <figure key={review.name}>
+                  <Quote className="h-5 w-5 text-glow-300" />
+                  <blockquote className="mt-3 text-base leading-relaxed text-ink">
+                    &ldquo;{review.text}&rdquo;
+                  </blockquote>
+                  <figcaption className="mt-3 text-sm text-ink-subtle">{review.name}</figcaption>
+                </figure>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* The shopfront, edge to edge. A picture of the actual door does more to
           make somebody press Book than another paragraph would. */}

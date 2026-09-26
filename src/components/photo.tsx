@@ -1,3 +1,5 @@
+import { cldUrl, cloudinaryConfigured } from '@/lib/cloudinary';
+
 /**
  * A photograph, or the gradient that stands in for one.
  *
@@ -11,12 +13,36 @@
  * deliberate without them is worth more than one that looks unfinished until
  * somebody books a photographer.
  */
+/**
+ * A local path, a full URL, or a Cloudinary public_id.
+ *
+ * The rule is deliberately something you can apply by eye: anything starting
+ * with `/` is a file in `public/`, anything starting with `http` is already a
+ * URL, and anything else is a Cloudinary public_id. So a salon moving its
+ * photographs to Cloudinary changes `/photos/hero.jpg` to `glow/hero` in
+ * salon.ts and nothing else — no component, no second field, no flag.
+ *
+ * A public_id with no cloud name configured resolves to nothing rather than to
+ * a broken image: the gradient comes back, which is a design, and the salon is
+ * looking at a missing environment variable rather than a missing photograph.
+ */
+function resolve(src: string, width: number): string | null {
+  if (src.startsWith('/') || src.startsWith('http')) return src;
+  return cloudinaryConfigured ? cldUrl(src, { width }) : null;
+}
+
 export function Photo({
   src,
   alt,
   className,
+  /**
+   * The widest this will ever be drawn, so Cloudinary can send that size
+   * rather than the original. Only used for Cloudinary sources.
+   */
+  width = 1200,
 }: {
   src: string | null | undefined;
+  width?: number;
   /**
    * What is in the picture. Required rather than optional: these are the
    * salon's room and the salon's people, and a customer using a screen reader
@@ -25,7 +51,8 @@ export function Photo({
   alt: string;
   className?: string;
 }) {
-  if (!src) return <div className={`photo-slot ${className ?? ''}`} aria-hidden />;
+  const url = src ? resolve(src, width) : null;
+  if (!url) return <div className={`photo-slot ${className ?? ''}`} aria-hidden />;
 
   return (
     <div className={`photo-slot ${className ?? ''}`}>
@@ -33,7 +60,7 @@ export function Photo({
           pictures on one page, and the config next/image needs for remote and
           local sources is more to get wrong than it saves here. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} className="h-full w-full object-cover" loading="lazy" />
+      <img src={url} alt={alt} className="h-full w-full object-cover" loading="lazy" />
     </div>
   );
 }

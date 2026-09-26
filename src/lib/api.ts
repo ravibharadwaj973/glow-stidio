@@ -231,3 +231,64 @@ export const book = (request: BookingRequest) =>
     // tell this site apart from their Instagram bio in the same report.
     body: JSON.stringify({ ...request, source: 'ONLINE', ref: 'website' }),
   });
+
+// ------------------------------------------------------------- feedback ---
+
+/**
+ * The feedback section is configured IN THE SALON'S OWN APP, not here.
+ *
+ * Every salon using this site as a starting point wants different wording, and
+ * some want no form at all. Putting the heading in this repository means a
+ * developer for every change of mind; putting it behind the API means the owner
+ * edits it on their phone between clients.
+ */
+export interface FeedbackSection {
+  config: {
+    enabled: boolean;
+    heading: string;
+    prompt: string;
+    phone: 'required' | 'optional' | 'off';
+    showReviews: boolean;
+  };
+  /**
+   * Only what the salon has approved. Nothing anybody types appears here
+   * until a person at the salon publishes it, so this is never a live feed of
+   * whatever the last stranger wrote.
+   */
+  reviews: { id: string; rating: number; comment: string | null; at: string; name: string }[];
+}
+
+/**
+ * Cached for a few minutes rather than read fresh.
+ *
+ * The section's wording changes a handful of times a year; a new approved
+ * review appears a handful of times a month. Neither is worth a round trip on
+ * every page load, and the homepage should not go slow because the API is
+ * having a bad minute.
+ */
+export async function feedbackSection(): Promise<FeedbackSection | null> {
+  try {
+    const response = await fetch(`${API_URL}/public/${SALON_SLUG}/feedback-section`, {
+      next: { revalidate: 300 },
+    });
+    if (!response.ok) return null;
+    const payload = (await response.json()) as Envelope<FeedbackSection>;
+    return payload.success ? (payload.data ?? null) : null;
+  } catch {
+    // A salon's website must not fail to render because feedback could not be
+    // loaded. The section simply does not appear.
+    return null;
+  }
+}
+
+export interface FeedbackRequest {
+  rating: number;
+  comment?: string;
+  name: string;
+  phone?: string;
+  /** The honeypot. Left empty by every human, because none of them see it. */
+  website?: string;
+}
+
+export const leaveFeedback = (request: FeedbackRequest) =>
+  call<{ received: boolean }>('/feedback', { method: 'POST', body: JSON.stringify(request) });

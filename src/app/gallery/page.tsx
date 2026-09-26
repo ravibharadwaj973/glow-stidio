@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Camera } from 'lucide-react';
 import { GalleryGrid } from '@/components/gallery-grid';
-import { populatedCollections, totalPhotos } from '@/lib/gallery';
+import { resolveCollections } from '@/lib/gallery';
 import { SALON } from '@/lib/salon';
 
 export const metadata: Metadata = {
@@ -22,8 +22,8 @@ export const metadata: Metadata = {
  * message has told the salon something specific, in a way that opening the
  * homepage does not.
  */
-export default function GalleryPage() {
-  const collections = populatedCollections();
+export default async function GalleryPage() {
+  const collections = await resolveCollections();
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-16 sm:py-20">
@@ -72,7 +72,6 @@ export default function GalleryPage() {
         </div>
       ) : null}
 
-      <p className="sr-only">{totalPhotos()} photographs</p>
     </main>
   );
 }
