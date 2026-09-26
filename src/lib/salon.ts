@@ -11,7 +11,21 @@
  * books into a different salon's diary — which is exactly how a second salon
  * would use this as a starting point.
  */
-export const SALON_SLUG = process.env.NEXT_PUBLIC_SALON_SLUG ?? 'parlon';
+/**
+ * WHOSE SALON THIS SITE IS.
+ *
+ * No fallback, deliberately. This used to default to 'parlon' — a slug that
+ * does not exist on the live system — which meant an unset variable produced a
+ * site where every request returned "Salon not found" and nothing said why. The
+ * worse version of the same mistake is a default that DOES exist: then the site
+ * quietly reads and writes another salon's diary, creates customers on their
+ * book, and fires their confirmation messages, with every request returning a
+ * clean 200.
+ *
+ * So an unset variable gives an empty slug, and checkSalonConfig below says so
+ * out loud the first time the site renders in development.
+ */
+export const SALON_SLUG = process.env.NEXT_PUBLIC_SALON_SLUG ?? '';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.jharavi.in/api/v1';
 

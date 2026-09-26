@@ -5,6 +5,7 @@ import { SALON, SERVICES, TEAM, PHOTOS } from '@/lib/salon';
 import { Photo } from '@/components/photo';
 import { resolveCollections } from '@/lib/gallery';
 import { feedbackSection } from '@/lib/api';
+import { checkSalonConfig } from '@/lib/config-check';
 import { FeedbackBlock } from '@/components/feedback';
 
 /**
@@ -44,6 +45,10 @@ export default async function HomePage() {
    * an apology is worse than no link. The call is the same cached one the
    * gallery page makes, so this costs nothing extra.
    */
+  // Runs on the homepage because that is the page a developer opens first.
+  // Development only, and silent when the API is simply not running.
+  await checkSalonConfig();
+
   const [collections, feedback] = await Promise.all([resolveCollections(), feedbackSection()]);
   const galleryReady = collections.length > 0;
 
