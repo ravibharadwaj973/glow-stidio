@@ -67,7 +67,25 @@ interface ListResource {
  */
 export function cldUrl(
   publicId: string,
-  options: { width?: number; height?: number; crop?: 'fill' | 'fit' } = {},
+  options: {
+    width?: number;
+    height?: number;
+    crop?: 'fill' | 'fit';
+    /**
+     * The account to serve from, when the caller knows better than this
+     * website's own environment.
+     *
+     * The salon's API reports which Cloudinary account it uploads to, and that
+     * answer is authoritative: the pictures are there, whatever this site's
+     * env happens to say. Preferring it removes a whole class of silent
+     * failure — a website pointed at one account while the app uploads to
+     * another renders every photograph as a 404, and neither side can see why.
+     *
+     * It also means the API path needs no Cloudinary configuration on the
+     * website at all.
+     */
+    cloudName?: string;
+  } = {},
 ): string {
   const parts = ['f_auto', 'q_auto', 'dpr_auto'];
   if (options.width) parts.push(`w_${options.width}`);
@@ -77,7 +95,8 @@ export function cldUrl(
   // of a finished cut, the alternative is a centre crop that removes the head.
   if ((options.crop ?? 'fill') === 'fill') parts.push('g_auto');
 
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${parts.join(',')}/${publicId}`;
+  const cloud = options.cloudName || CLOUD_NAME;
+  return `https://res.cloudinary.com/${cloud}/image/upload/${parts.join(',')}/${publicId}`;
 }
 
 /**

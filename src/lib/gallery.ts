@@ -189,9 +189,10 @@ export const COLLECTIONS: GalleryCollection[] = [
 function toPhoto(
   image: { publicId: string; alt: string | null; caption: string | null; width: number; height: number },
   collectionLabel: string,
+  cloudName?: string,
 ): GalleryPhoto {
   return {
-    src: cldUrl(image.publicId, { width: 900 }),
+    src: cldUrl(image.publicId, { width: 900, cloudName }),
     alt: image.alt ?? `${collectionLabel} at ${SALON.name}`,
     caption: image.caption ?? undefined,
     shape: image.height > image.width ? 'portrait' : 'landscape',
@@ -227,7 +228,11 @@ export async function resolveCollections(): Promise<GalleryCollection[]> {
     const resolved = COLLECTIONS.map((collection) => {
       const photos = byCollection.get(collection.key) ?? [];
       return photos.length > 0
-        ? { ...collection, photos: photos.map((photo) => toPhoto(photo, collection.label)) }
+        ? {
+            ...collection,
+            // The account the API says it uploaded to, not this site's guess.
+            photos: photos.map((photo) => toPhoto(photo, collection.label, curated.cloudName ?? undefined)),
+          }
         : collection;
     }).filter((collection) => collection.photos.length > 0);
 
