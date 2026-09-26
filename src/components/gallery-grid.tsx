@@ -29,7 +29,7 @@ export function GalleryGrid({ collections }: { collections: GalleryCollection[] 
     setActive(key);
     // Which work a visitor looked at is the single most useful thing this page
     // knows. See lib/track.ts for what is and is not sent.
-    track('gallery_filter', { collection: key, label });
+    track('gallery_filter', { collection: key }, label);
   };
 
   return (

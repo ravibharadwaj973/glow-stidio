@@ -44,6 +44,7 @@ import { API_URL, SALON_SLUG } from './salon';
  */
 
 const STORAGE_KEY = 'parlon.pv';
+const SESSION_KEY = 'parlon.sid';
 
 /** sessionStorage throws in some private modes. Nothing here is worth a crash. */
 function readToken(): string | null {
@@ -91,6 +92,40 @@ export function captureArrival(): string | null {
 }
 
 /**
+ * ONE VISIT'S WORTH OF EVENTS, TIED TOGETHER.
+ *
+ * Without this, "opened the gallery, looked at hair, looked at hair spa,
+ * started booking and stopped" is four unrelated rows and the journey — the
+ * only interesting thing about them — cannot be reassembled.
+ *
+ * DELIBERATELY NOT A DEVICE IDENTIFIER. It is random, it lives in
+ * sessionStorage, and it dies with the tab, so it cannot be used to recognise
+ * anybody across visits or across sites. Who this is was already established by
+ * the link the salon sent them; this only says which events belong to the same
+ * sitting.
+ */
+function sessionId(): string | null {
+  try {
+    const existing = window.sessionStorage.getItem(SESSION_KEY);
+    if (existing) return existing;
+
+    // crypto.randomUUID is not in every browser a salon's customers use; the
+    // fallback does not need to be cryptographic, only unlikely to collide
+    // within one tab.
+    const fresh =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+
+    window.sessionStorage.setItem(SESSION_KEY, fresh);
+    return fresh;
+  } catch {
+    // Storage blocked. The events still record, just without a journey.
+    return null;
+  }
+}
+
+/**
  * Report something that happened, if this visitor came from a message.
  *
  * Fire-and-forget by design. A failed report must never delay a page or show a
@@ -98,17 +133,26 @@ export function captureArrival(): string | null {
  * funnel, and the worst case of blocking on it is somebody giving up on
  * booking.
  */
-export function track(event: string, props: Record<string, string> = {}): void {
+export function track(event: string, metadata: Record<string, string> = {}, label?: string): void {
   if (typeof window === 'undefined') return;
 
   const code = readToken();
   if (!code) return;
 
+  const sid = sessionId();
+
   const body = JSON.stringify({
     code,
     event,
     path: window.location.pathname,
-    ...props,
+    ...(label ? { label } : {}),
+    ...(sid ? { sessionId: sid } : {}),
+    /**
+     * Nested rather than spread alongside the event, so a page cannot
+     * accidentally overwrite `code` or `path` by naming a metadata key the same
+     * thing. The API keeps its own allow-list of metadata keys as well.
+     */
+    ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
   });
 
   try {

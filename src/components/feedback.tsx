@@ -107,7 +107,9 @@ function FeedbackForm({ config }: { config: FeedbackSection['config'] }) {
         website: website || undefined,
       });
       setDone(true);
-      track('feedback_left', { rating: String(rating) });
+      // The rating is the label; metadata keys are an allow-list on the API
+      // side and `rating` is not one of them, so it would be dropped.
+      track('feedback_left', {}, `${rating} stars`);
     } catch {
       /**
        * One sentence, and their words are still in the box.

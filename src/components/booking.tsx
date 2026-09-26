@@ -14,6 +14,7 @@ import {
   type Slot,
 } from '@/lib/api';
 import { API_URL, SALON, SALON_SLUG } from '@/lib/salon';
+import { track } from '@/lib/track';
 
 /**
  * Book an appointment.
@@ -193,12 +194,31 @@ export function Booking() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branch, date, chosen]);
 
-  const toggle = (service: MenuService) =>
-    setChosen((current) =>
-      current.some((s) => s.id === service.id)
-        ? current.filter((s) => s.id !== service.id)
-        : [...current, service],
-    );
+  const toggle = (service: MenuService) => {
+    setChosen((current) => {
+      const already = current.some((s) => s.id === service.id);
+
+      /**
+       * PICKING A SERVICE IS THE STRONGEST SIGNAL ON THIS PAGE.
+       *
+       * Recorded rather than a page view, because it is an id — a real service
+       * in the salon's own catalogue, which is what makes it joinable to
+       * anything later. "Somebody opened a page with the word colour on it" is
+       * not, and the app's interest rollup deliberately refuses it.
+       *
+       * Reported only on SELECT, not on deselect. Somebody who ticks a service
+       * and then unticks it still looked at it and still priced it; treating
+       * that as a retraction would throw away the more interesting half of the
+       * behaviour — they considered it and did not book it.
+       *
+       * And nothing at all is sent for a visitor who did not arrive from one of
+       * the salon's own messages. See lib/track.ts.
+       */
+      if (!already) track('service_view', { serviceId: service.id }, service.name);
+
+      return already ? current.filter((s) => s.id !== service.id) : [...current, service];
+    });
+  };
 
   const total = chosen.reduce((sum, service) => sum + Number(service.price), 0);
   const minutes = chosen.reduce((sum, service) => sum + service.durationMin, 0);
@@ -239,6 +259,9 @@ export function Booking() {
         marketingConsent: form.consent,
       });
       setConfirmed(startAt);
+      // The end of the funnel. Reported after the booking succeeded, never
+      // before: "booked" has to mean booked.
+      track('booked', {}, chosen.map((service) => service.name).join(', ').slice(0, 120));
     } catch (err) {
       setError(
         err instanceof BookingError
