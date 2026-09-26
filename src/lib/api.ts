@@ -292,3 +292,45 @@ export interface FeedbackRequest {
 
 export const leaveFeedback = (request: FeedbackRequest) =>
   call<{ received: boolean }>('/feedback', { method: 'POST', body: JSON.stringify(request) });
+
+// -------------------------------------------------------------- gallery ---
+
+export interface SalonGallery {
+  /**
+   * The cloud name the salon's own app is configured with.
+   *
+   * Reported so the two cannot silently disagree: if this site is pointed at
+   * one Cloudinary account and the app uploads to another, every picture is a
+   * 404 and the cause is invisible from either side.
+   */
+  cloudName: string | null;
+  collections: { key: string; label: string }[];
+  photos: {
+    publicId: string;
+    collection: string;
+    alt: string | null;
+    caption: string | null;
+    width: number;
+    height: number;
+  }[];
+}
+
+/**
+ * The gallery as the salon curated it — their order, their captions, without
+ * the ones they have hidden.
+ *
+ * Cached for ten minutes. A gallery changes a few times a month; reading it
+ * fresh on every page view would make the site's speed depend on the API's,
+ * and returns null rather than throwing so the caller can fall through to
+ * Cloudinary's tag list. See resolveCollections in lib/gallery.ts.
+ */
+export async function salonGallery(): Promise<SalonGallery | null> {
+  try {
+    const response = await fetch(`${API_URL}/public/${SALON_SLUG}/gallery`, { next: { revalidate: 600 } });
+    if (!response.ok) return null;
+    const payload = (await response.json()) as Envelope<SalonGallery>;
+    return payload.success ? (payload.data ?? null) : null;
+  } catch {
+    return null;
+  }
+}

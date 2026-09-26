@@ -1,4 +1,5 @@
-import { SERVICES } from './salon';
+import { SALON, SERVICES } from './salon';
+import { salonGallery } from './api';
 import { cldUrl, imagesByTag } from './cloudinary';
 
 /**
@@ -23,19 +24,26 @@ import { cldUrl, imagesByTag } from './cloudinary';
  *
  * ── Adding photographs ────────────────────────────────────────────────────
  *
- * Through CLOUDINARY, so that adding three pictures of a balayage does not
- * mean a developer, a commit and a deploy — the workflow that leaves galleries
- * eighteen months out of date:
+ * IN THE SALON'S OWN APP. Settings → Gallery: pick the collection, choose the
+ * file, write the alt text. The app uploads it to Cloudinary, tags it, and
+ * keeps the salon's own order, captions and hidden/shown state — none of which
+ * a Cloudinary tag can hold.
  *
- *   1. Upload in Cloudinary.
- *   2. Tag it with the collection's `tag` below (gallery-colour, gallery-cuts…).
- *   3. Fill in its `alt` context field, and `caption` if there is something to
- *      say. See lib/cloudinary.ts for the one Cloudinary setting this needs.
+ * So there are three sources, tried in this order:
  *
- * The `photos` array on each collection is the FALLBACK, used when Cloudinary
- * is not configured or has nothing under that tag. It is how this site ships
- * with its four studio photographs and no service work, and how it keeps
- * working if Cloudinary is unreachable.
+ *   1. THE SALON'S API. Their order, their captions, their hidden photographs.
+ *      This is the normal case.
+ *   2. CLOUDINARY'S TAG LIST, unsigned and read-only. The fallback when the API
+ *      is unreachable — the pictures are still there and still correct, just
+ *      without the salon's ordering. Also the path for a salon who prefers to
+ *      upload in Cloudinary directly and tag by hand.
+ *   3. THE LOCAL FILES named below. How this site works out of the box with
+ *      neither configured, and why it ships with four studio photographs and no
+ *      service work.
+ *
+ * Each step only runs when the one before it came back with nothing, so a
+ * gallery never silently mixes the salon's curated set with an unordered tag
+ * dump.
  *
  * Landscape crops to 4:3 and portrait to 4:5, so a full-length cut is not
  * beheaded by a square grid cell. Say which each one is; the default is
@@ -167,45 +175,77 @@ export const COLLECTIONS: GalleryCollection[] = [
 ];
 
 /**
- * The collections as they should actually be drawn: Cloudinary's pictures where
- * there are any, the local fallback where there are not, and nothing at all
- * for a collection that is empty both ways.
+ * One photograph, from whichever source supplied it.
  *
- * Cloudinary WINS over the fallback rather than adding to it. A salon that has
- * uploaded real colour work does not want the four studio photographs mixed
- * into that collection, and a collection showing both would be impossible to
- * reason about from the Cloudinary side.
+ * The alt text is never the public_id. "IMG_4821_final_v2" read out by a screen
+ * reader is worse than silence, because it sounds like information — so a
+ * picture with no alt text falls back to a sentence naming the kind of work,
+ * which is at least true and is what somebody choosing a salon is listening
+ * for. The app makes alt text a required field at upload for this reason.
  *
- * All the tags are fetched at once. Six sequential round trips to build one
- * page is most of a second on a good connection and the difference between a
- * page and a wait on a bad one.
+ * Portrait gets a taller cell: a full-length cut in a 4:3 frame loses the
+ * length, which is the thing being shown.
+ */
+function toPhoto(
+  image: { publicId: string; alt: string | null; caption: string | null; width: number; height: number },
+  collectionLabel: string,
+): GalleryPhoto {
+  return {
+    src: cldUrl(image.publicId, { width: 900 }),
+    alt: image.alt ?? `${collectionLabel} at ${SALON.name}`,
+    caption: image.caption ?? undefined,
+    shape: image.height > image.width ? 'portrait' : 'landscape',
+  };
+}
+
+/**
+ * The collections as they should actually be drawn.
+ *
+ * Three sources in order — the salon's API, Cloudinary's tag list, the local
+ * files — with each only consulted when the one before it came back empty. See
+ * the note at the top of this file.
+ *
+ * A source WINS over the next rather than adding to it. A salon that has
+ * uploaded real colour work does not want four studio photographs mixed into
+ * that collection, and a gallery showing two sources at once is impossible to
+ * reason about from either end.
  */
 export async function resolveCollections(): Promise<GalleryCollection[]> {
+  /**
+   * The salon's own gallery first. One request for every collection, and it
+   * carries the order they put the pictures in.
+   */
+  const curated = await salonGallery();
+  if (curated && curated.photos.length > 0) {
+    const byCollection = new Map<string, typeof curated.photos>();
+    for (const photo of curated.photos) {
+      const list = byCollection.get(photo.collection);
+      if (list) list.push(photo);
+      else byCollection.set(photo.collection, [photo]);
+    }
+
+    const resolved = COLLECTIONS.map((collection) => {
+      const photos = byCollection.get(collection.key) ?? [];
+      return photos.length > 0
+        ? { ...collection, photos: photos.map((photo) => toPhoto(photo, collection.label)) }
+        : collection;
+    }).filter((collection) => collection.photos.length > 0);
+
+    if (resolved.length > 0) return resolved;
+  }
+
+  /**
+   * Cloudinary's tag list. All six tags at once: six sequential round trips to
+   * build one page is most of a second on a good connection and the difference
+   * between a page and a wait on a bad one.
+   */
   const fetched = await Promise.all(COLLECTIONS.map((collection) => imagesByTag(collection.tag)));
 
   return COLLECTIONS.map((collection, index) => {
     const images = fetched[index] ?? [];
-    if (images.length === 0) return collection;
-
-    return {
-      ...collection,
-      photos: images.map((image) => ({
-        src: cldUrl(image.publicId, { width: 900 }),
-        /**
-         * Cloudinary's alt context, or a sentence naming the collection.
-         *
-         * Never the public_id: "IMG_4821_final_v2" read out by a screen reader
-         * is worse than nothing, because it sounds like information. The
-         * fallback at least says which kind of work the picture is of, which is
-         * true and is what somebody choosing a salon is listening for.
-         */
-        alt: image.alt ?? `${collection.label} at Glow Studio`,
-        caption: image.caption ?? undefined,
-        // Portrait when Cloudinary says so. A full-length cut in a 4:3 cell
-        // loses the length, which is the thing being shown.
-        shape: image.height > image.width ? ('portrait' as const) : ('landscape' as const),
-      })),
-    };
+    return images.length > 0
+      ? { ...collection, photos: images.map((image) => toPhoto(image, collection.label)) }
+      : collection;
   }).filter((collection) => collection.photos.length > 0);
 }
 
