@@ -75,8 +75,11 @@ export function GalleryGrid({ collections }: { collections: GalleryCollection[] 
         {showing.map((collection) => (
           <section key={collection.key} id={collection.key} className="scroll-mt-24">
             <h2 className="display text-3xl">{collection.label}</h2>
+            {/* The blurb is optional — the collections are the salon's own
+                categories and this site has copy for the common ones only. A
+                bare heading with a price reads better than invented filler. */}
             <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-ink-muted">
-              {collection.blurb}
+              {collection.blurb ?? ''}
               {/**
                 * "from ₹2,500" on the heading, worked out from the cheapest
                 * service in the collection rather than typed into the copy.
@@ -84,7 +87,10 @@ export function GalleryGrid({ collections }: { collections: GalleryCollection[] 
                 * next time the salon changes it, on the one page it is quoted on.
                 */}
               {priceFrom(collection) ? (
-                <span className="text-ink"> From {money(priceFrom(collection)!)}.</span>
+                <span className="text-ink">
+                  {collection.blurb ? ' ' : ''}
+                  From {money(priceFrom(collection)!)}.
+                </span>
               ) : null}
             </p>
 

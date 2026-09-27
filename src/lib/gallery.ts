@@ -1,4 +1,4 @@
-import { SALON, SERVICES } from './salon';
+import { SALON } from './salon';
 import { salonGallery } from './api';
 import { cldUrl, imagesByTag } from './cloudinary';
 
@@ -80,7 +80,12 @@ export interface GalleryPhoto {
 }
 
 export interface GalleryCollection {
-  /** The url fragment: /gallery#colour. */
+  /**
+   * The url fragment, and the salon's own ServiceCategory id (or 'studio').
+   *
+   * An id rather than a name, so renaming "Hair" to "Hair & Styling" in the
+   * catalogue does not orphan every photograph filed under it.
+   */
   key: string;
   /**
    * The Cloudinary tag the salon puts on photographs for this collection.
@@ -93,100 +98,45 @@ export interface GalleryCollection {
   /** The filter chip, and the heading. */
   label: string;
   /**
-   * Which entry on the menu this is work FOR.
+   * One line under the heading, when there is one worth writing.
    *
-   * Kept as the service's own name rather than a free-text label so the two
-   * lists cannot drift: a gallery category called "Hair colour" sitting above
-   * a menu item called "Colour" reads as two different services to a customer
-   * deciding between them.
+   * Optional, because the collections are the salon's own categories and this
+   * site cannot have copy for every one a salon might invent. A bare heading
+   * reads better than generated filler.
    */
-  service: (typeof SERVICES)[number]['name'] | null;
-  /** One line under the heading. What somebody is looking at. */
-  blurb: string;
+  blurb?: string;
   photos: GalleryPhoto[];
 }
 
-export const COLLECTIONS: GalleryCollection[] = [
-  {
-    key: 'studio',
-    tag: 'gallery-studio',
-    label: 'The studio',
-    service: null,
-    blurb: 'The room, the tools and the street door — so you know what you are walking into.',
-    photos: [
-      {
-        src: '/photos/interior.jpg',
-        alt: 'The main room, with three styling chairs facing a mirrored wall',
-        caption: 'Three chairs, and never more than three appointments at once.',
-      },
-      {
-        src: '/photos/tools.jpg',
-        alt: 'Scissors, combs and colour bowls laid out on a counter',
-        caption: 'Colour is mixed fresh for each head.',
-      },
-      {
-        src: '/photos/team.jpg',
-        alt: 'Two stylists at work in the studio',
-        caption: 'Priya and Rahul, mid-afternoon.',
-      },
-      {
-        src: '/photos/sign.jpg',
-        alt: 'The Glow Studio sign above the entrance on Church Street',
-        caption: 'Second floor, above the bookshop.',
-      },
-    ],
-  },
+/**
+ * COPY FOR THE COLLECTIONS WE CAN RECOGNISE, AND SILENCE FOR THE REST.
+ *
+ * The collections themselves come from the salon's own service categories, so
+ * this site cannot know them in advance — a nail bar has Nails, Extensions and
+ * Art, and none of those are in any list written here.
+ *
+ * Where a category matches something common to Indian salons, there is a real
+ * sentence for it. Where it does not, there is none, and the heading stands on
+ * its own. That is deliberate: generated filler ("Our Extensions work, shown
+ * here") reads worse than a bare heading and makes the whole page sound
+ * automated, which is the opposite of what a gallery is for.
+ */
+const BLURBS: Record<string, string> = {
+  hair: 'Cuts, colour and treatments \u2014 shot in the salon, under the same light you will see yourself in.',
+  colour: 'Balayage, global colour and corrections. Before and after wherever we have both.',
+  skin: 'Facials and cleanups. Only ever published with the customer\u2019s permission.',
+  nails: 'Manicures, pedicures, extensions and art.',
+  makeup: 'Party and bridal \u2014 trials and the day itself, from the last two seasons.',
+  bridal: 'Trials and wedding days, from the last two seasons.',
+  grooming: 'Beards, fades and the tidy-up nobody photographs but everybody notices.',
+  'spa-and-massage': 'The quiet room, and what happens in it.',
+  studio: 'The room, the tools and the street door \u2014 so you know what you are walking into.',
+};
 
-  /**
-   * The service collections, waiting for real photographs.
-   *
-   * Left in place with empty arrays deliberately: the structure is the
-   * instruction. A salon owner opening this file sees exactly where their
-   * colour pictures go, and until they add any, the category is simply not
-   * rendered — no "coming soon", no empty grid, no apology on a page a
-   * customer is reading.
-   */
-  {
-    key: 'colour',
-    tag: 'gallery-colour',
-    label: 'Colour',
-    service: 'Colour',
-    blurb: 'Balayage, global colour and corrections. Before and after, wherever we have both.',
-    photos: [],
-  },
-  {
-    key: 'cuts',
-    tag: 'gallery-cuts',
-    label: 'Cuts',
-    service: 'Cut & finish',
-    blurb: 'Finished cuts, shot in the salon under the same light you will see yourself in.',
-    photos: [],
-  },
-  {
-    key: 'treatments',
-    tag: 'gallery-treatments',
-    label: 'Treatments',
-    service: 'Hair treatments',
-    blurb: 'Keratin, botox and deep conditioning — the difference is easier to show than to describe.',
-    photos: [],
-  },
-  {
-    key: 'skin',
-    tag: 'gallery-skin',
-    label: 'Skin',
-    service: 'Facials & skin',
-    blurb: 'Facials and cleanups. Only ever with the customer’s permission to publish.',
-    photos: [],
-  },
-  {
-    key: 'bridal',
-    tag: 'gallery-bridal',
-    label: 'Bridal & occasion',
-    service: 'Bridal & occasion',
-    blurb: 'Trials and wedding days, from the last two seasons.',
-    photos: [],
-  },
-];
+/** The blurb for a collection, matched on its tag. Absent is fine. */
+function blurbFor(tag: string): string | undefined {
+  return BLURBS[tag.replace(/^gallery-/, '')];
+}
 
 /**
  * One photograph, from whichever source supplied it.
@@ -239,7 +189,7 @@ export async function resolveCollections(): Promise<GalleryCollection[]> {
    * carries the order they put the pictures in.
    */
   const curated = await salonGallery();
-  if (curated && curated.photos.length > 0) {
+  if (curated && curated.collections.length > 0) {
     const byCollection = new Map<string, typeof curated.photos>();
     for (const photo of curated.photos) {
       const list = byCollection.get(photo.collection);
@@ -247,36 +197,65 @@ export async function resolveCollections(): Promise<GalleryCollection[]> {
       else byCollection.set(photo.collection, [photo]);
     }
 
-    const resolved = COLLECTIONS.map((collection) => {
-      const photos = byCollection.get(collection.key) ?? [];
-      return photos.length > 0
-        ? {
-            ...collection,
-            // The account the API says it uploaded to, not this site's guess.
-            photos: photos.map((photo) => toPhoto(photo, collection.label, curated.cloudName ?? undefined)),
-          }
-        : collection;
-    }).filter((collection) => collection.photos.length > 0);
+    /**
+     * The salon's collections, in the salon's order.
+     *
+     * Their service categories carry a sortOrder they chose, and the API hands
+     * them over in it \u2014 so the gallery reads in the same order as their menu
+     * rather than in whatever order the photographs happen to come back.
+     */
+    const resolved: GalleryCollection[] = curated.collections
+      .map((collection) => ({
+        key: collection.key,
+        label: collection.label,
+        tag: collection.tag,
+        blurb: blurbFor(collection.tag),
+        photos: (byCollection.get(collection.key) ?? []).map((photo) =>
+          toPhoto(photo, collection.label, curated.cloudName ?? undefined),
+        ),
+      }))
+      .filter((collection) => collection.photos.length > 0);
 
     if (resolved.length > 0) return resolved;
+
+    /**
+     * The salon has collections but no photographs in any of them, and the tag
+     * fallback below would find nothing either \u2014 the app is the only thing that
+     * uploads, and it records every upload. So stop here rather than making six
+     * requests to Cloudinary to confirm an empty gallery on every page load.
+     */
+    return [];
   }
 
   /**
-   * Cloudinary's tag list. All six tags at once: six sequential round trips to
-   * build one page is most of a second on a good connection and the difference
-   * between a page and a wait on a bad one.
+   * CLOUDINARY'S TAG LIST, the fallback.
+   *
+   * Reached when the salon's API is unreachable, or for a salon that prefers to
+   * upload and tag in Cloudinary by hand. Without the API there is no list of
+   * categories to ask for, so it falls back to the tags this site can guess at
+   * \u2014 the ones it has copy for, which are the common Indian salon categories.
+   *
+   * All at once: a request per tag in sequence is most of a second on a good
+   * connection and the difference between a page and a wait on a bad one.
    */
-  const fetched = await Promise.all(COLLECTIONS.map((collection) => imagesByTag(collection.tag)));
+  const guessable = Object.keys(BLURBS).map((slug) => ({
+    key: slug,
+    label: slug
+      .split('-')
+      .map((word) => (word === 'and' ? '&' : word.charAt(0).toUpperCase() + word.slice(1)))
+      .join(' '),
+    tag: `gallery-${slug}`,
+  }));
 
-  return COLLECTIONS.map((collection, index) => {
-    const images = fetched[index] ?? [];
-    return images.length > 0
-      ? { ...collection, photos: images.map((image) => toPhoto(image, collection.label)) }
-      : collection;
-  }).filter((collection) => collection.photos.length > 0);
+  const fetched = await Promise.all(guessable.map((collection) => imagesByTag(collection.tag)));
+
+  return guessable
+    .map((collection, index) => ({
+      ...collection,
+      blurb: blurbFor(collection.tag),
+      photos: (fetched[index] ?? []).map((image) => toPhoto(image, collection.label)),
+    }))
+    .filter((collection) => collection.photos.length > 0);
 }
 
-/** The local fallback only — used where an async call is not available. */
-export function populatedCollections(): GalleryCollection[] {
-  return COLLECTIONS.filter((collection) => collection.photos.length > 0);
-}
+

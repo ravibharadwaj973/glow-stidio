@@ -304,7 +304,12 @@ export interface SalonGallery {
    * 404 and the cause is invisible from either side.
    */
   cloudName: string | null;
-  collections: { key: string; label: string }[];
+  /**
+   * The salon's own service categories, in the order they chose, plus one
+   * built-in bucket for the studio photographs. Not a list this site can know
+   * in advance: a nail bar's categories are not a hair salon's.
+   */
+  collections: { key: string; label: string; tag: string }[];
   photos: {
     publicId: string;
     collection: string;
