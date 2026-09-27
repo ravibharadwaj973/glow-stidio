@@ -50,6 +50,15 @@ import { cldUrl, imagesByTag } from './cloudinary';
  * landscape because most phone photographs of a finished head are.
  */
 
+/** The service a photograph is work for, with its live price. */
+export interface PhotoService {
+  id: string;
+  name: string;
+  price: string;
+  durationMin: number;
+  categoryName: string | null;
+}
+
 export interface GalleryPhoto {
   src: string;
   /**
@@ -63,6 +72,11 @@ export interface GalleryPhoto {
   /** A line under the picture. The service, the stylist, how long it took. */
   caption?: string;
   shape?: 'landscape' | 'portrait';
+  /**
+   * What this is and what it costs, when the salon has said which service it
+   * is. Absent for the studio photographs, and for a service since retired.
+   */
+  service?: PhotoService;
 }
 
 export interface GalleryCollection {
@@ -187,7 +201,14 @@ export const COLLECTIONS: GalleryCollection[] = [
  * length, which is the thing being shown.
  */
 function toPhoto(
-  image: { publicId: string; alt: string | null; caption: string | null; width: number; height: number },
+  image: {
+    publicId: string;
+    alt: string | null;
+    caption: string | null;
+    width: number;
+    height: number;
+    service?: PhotoService | null;
+  },
   collectionLabel: string,
   cloudName?: string,
 ): GalleryPhoto {
@@ -196,6 +217,7 @@ function toPhoto(
     alt: image.alt ?? `${collectionLabel} at ${SALON.name}`,
     caption: image.caption ?? undefined,
     shape: image.height > image.width ? 'portrait' : 'landscape',
+    service: image.service ?? undefined,
   };
 }
 

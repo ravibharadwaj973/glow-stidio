@@ -312,6 +312,23 @@ export interface SalonGallery {
     caption: string | null;
     width: number;
     height: number;
+    /**
+     * The service this photograph is work for, priced live from the salon's own
+     * catalogue — never a figure copied when the picture was uploaded, which
+     * would go stale and quote a customer a price the salon no longer charges.
+     *
+     * Null when the photograph is not work for anything (the room, the tools),
+     * or when the service has since been retired or taken off online booking.
+     * In that case the picture stays and the price simply is not shown: a
+     * "Book this" button with nothing behind it is worse than no button.
+     */
+    service: {
+      id: string;
+      name: string;
+      price: string;
+      durationMin: number;
+      categoryName: string | null;
+    } | null;
   }[];
 }
 

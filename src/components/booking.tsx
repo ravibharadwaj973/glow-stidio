@@ -121,6 +121,26 @@ export function Booking() {
         if (cancelled) return;
         setBranch(info.branches[0] ?? null);
         setMenu(categories);
+
+        /**
+         * PRE-SELECT WHAT THEY CAME FOR.
+         *
+         * The gallery's "Book this" arrives as /#book?service=<id>. Without
+         * this, somebody who tapped a photograph of a balayage lands on an
+         * empty form and has to find balayage again in a list — which is the
+         * moment a good proportion of them give up, and the whole reason the
+         * link was worth putting under the picture.
+         *
+         * Read here rather than with useSearchParams so it happens once the
+         * menu exists: the id has to be matched against a real service, and
+         * matching it is also the validation — an id that is not on this
+         * salon's bookable menu is simply ignored rather than trusted.
+         */
+        const wanted = new URLSearchParams(window.location.search).get('service');
+        if (!wanted) return;
+
+        const found = categories.flatMap((category) => category.services).find((service) => service.id === wanted);
+        if (found) setChosen([found]);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
