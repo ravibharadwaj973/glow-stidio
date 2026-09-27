@@ -339,14 +339,21 @@ export interface SalonGallery {
  * The gallery as the salon curated it — their order, their captions, without
  * the ones they have hidden.
  *
- * Cached for ten minutes. A gallery changes a few times a month; reading it
- * fresh on every page view would make the site's speed depend on the API's,
- * and returns null rather than throwing so the caller can fall through to
+ * Cached for a minute. Ten minutes was the obvious number — a gallery changes
+ * a few times a month, and reading it fresh on every page view would make the
+ * site's speed depend on the API's. It was still wrong, for a reason unrelated
+ * to how often a gallery changes: this interval is how long an owner waits to
+ * find out whether their upload worked. They add photographs in Parlon, open
+ * their website, see the same empty page and conclude the gallery is broken.
+ * A minute still serves one request per minute per server rather than one per
+ * visitor, and is short enough to wait out.
+ *
+ * Returns null rather than throwing, so the caller can fall through to
  * Cloudinary's tag list. See resolveCollections in lib/gallery.ts.
  */
 export async function salonGallery(): Promise<SalonGallery | null> {
   try {
-    const response = await fetch(`${API_URL}/public/${SALON_SLUG}/gallery`, { next: { revalidate: 600 } });
+    const response = await fetch(`${API_URL}/public/${SALON_SLUG}/gallery`, { next: { revalidate: 60 } });
     if (!response.ok) return null;
     const payload = (await response.json()) as Envelope<SalonGallery>;
     return payload.success ? (payload.data ?? null) : null;
