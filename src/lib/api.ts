@@ -318,22 +318,20 @@ export interface SalonGallery {
     width: number;
     height: number;
     /**
-     * The service this photograph is work for, priced live from the salon's own
-     * catalogue — never a figure copied when the picture was uploaded, which
-     * would go stale and quote a customer a price the salon no longer charges.
+     * The service this photograph is work for: its name, and no price.
+     *
+     * The gallery names the work and offers to book it; it does not quote. The
+     * work in a photograph almost never costs what the line item says — length,
+     * condition and how long it took all move it — so a figure under the picture
+     * sets up a conversation at the counter that starts with the customer
+     * feeling misled.
      *
      * Null when the photograph is not work for anything (the room, the tools),
      * or when the service has since been retired or taken off online booking.
-     * In that case the picture stays and the price simply is not shown: a
-     * "Book this" button with nothing behind it is worse than no button.
+     * The picture stays and the "Book this" disappears: a button with nothing
+     * behind it is worse than no button.
      */
-    service: {
-      id: string;
-      name: string;
-      price: string;
-      durationMin: number;
-      categoryName: string | null;
-    } | null;
+    service: { id: string; name: string } | null;
   }[];
 }
 

@@ -50,13 +50,15 @@ import { cldUrl, imagesByTag } from './cloudinary';
  * landscape because most phone photographs of a finished head are.
  */
 
-/** The service a photograph is work for, with its live price. */
+/**
+ * The service a photograph is work for — named, not priced.
+ *
+ * See the note in api.ts: the gallery says what the work is and offers to book
+ * it, and leaves the quote to the salon, who can see the customer's hair.
+ */
 export interface PhotoService {
   id: string;
   name: string;
-  price: string;
-  durationMin: number;
-  categoryName: string | null;
 }
 
 export interface GalleryPhoto {
@@ -73,8 +75,8 @@ export interface GalleryPhoto {
   caption?: string;
   shape?: 'landscape' | 'portrait';
   /**
-   * What this is and what it costs, when the salon has said which service it
-   * is. Absent for the studio photographs, and for a service since retired.
+   * What this is, when the salon has said which service it is. Absent for the
+   * studio photographs, and for a service since retired.
    */
   service?: PhotoService;
 }

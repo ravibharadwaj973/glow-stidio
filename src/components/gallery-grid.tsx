@@ -22,27 +22,6 @@ import { track } from '@/lib/track';
  * a square loses the length, which is the thing being shown. Portrait pictures
  * get a taller cell and the grid flows around them.
  */
-/**
- * Rupees, the way a price list writes them.
- *
- * Kept here rather than pulled from a formatting library: this site renders
- * exactly one kind of number, and Intl gives "₹2,500.00" where a salon's menu
- * says "₹2,500" — the paise are noise on a price nobody pays in paise.
- */
-function money(value: string | number): string {
-  const amount = Math.round(Number(value));
-  return Number.isFinite(amount) ? `₹${amount.toLocaleString('en-IN')}` : '';
-}
-
-/** The cheapest bookable thing in a collection, or nothing if none are priced. */
-function priceFrom(collection: GalleryCollection): string | null {
-  const prices = collection.photos
-    .map((photo) => Number(photo.service?.price))
-    .filter((price) => Number.isFinite(price) && price > 0);
-
-  return prices.length > 0 ? String(Math.min(...prices)) : null;
-}
-
 export function GalleryGrid({ collections }: { collections: GalleryCollection[] }) {
   const [active, setActive] = useState<string>('all');
 
@@ -75,24 +54,12 @@ export function GalleryGrid({ collections }: { collections: GalleryCollection[] 
         {showing.map((collection) => (
           <section key={collection.key} id={collection.key} className="scroll-mt-24">
             <h2 className="display text-3xl">{collection.label}</h2>
-            {/* The blurb is optional — the collections are the salon's own
-                categories and this site has copy for the common ones only. A
-                bare heading with a price reads better than invented filler. */}
-            <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-ink-muted">
-              {collection.blurb ?? ''}
-              {/**
-                * "from ₹2,500" on the heading, worked out from the cheapest
-                * service in the collection rather than typed into the copy.
-                * A price written into a sentence is a price that goes stale the
-                * next time the salon changes it, on the one page it is quoted on.
-                */}
-              {priceFrom(collection) ? (
-                <span className="text-ink">
-                  {collection.blurb ? ' ' : ''}
-                  From {money(priceFrom(collection)!)}.
-                </span>
-              ) : null}
-            </p>
+            {/* Optional — the collections are the salon's own categories and
+                this site has copy for the common ones only. A bare heading
+                reads better than invented filler. */}
+            {collection.blurb ? (
+              <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-ink-muted">{collection.blurb}</p>
+            ) : null}
 
             <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
               {collection.photos.map((photo) => (
@@ -104,24 +71,22 @@ export function GalleryGrid({ collections }: { collections: GalleryCollection[] 
                   />
 
                   {/**
-                    * WHAT IT IS, WHAT IT COSTS, AND HOW TO GET IT.
+                    * WHAT IT IS, AND HOW TO GET IT. Not what it costs.
                     *
-                    * The three things somebody standing in front of a photograph
-                    * wants, in that order. A gallery that shows only pictures
-                    * leaves them to guess the price and go looking for it, and
-                    * most of them do not bother — so this is the shortest path
-                    * there is from wanting something to having an appointment.
+                    * Naming the work is what a photograph cannot do on its own —
+                    * somebody who likes a picture does not necessarily know
+                    * whether they are looking at balayage or highlights, and
+                    * cannot ask for it if they cannot name it.
                     *
-                    * The price comes live from the salon's catalogue, so it
-                    * cannot quote a figure they stopped charging months ago.
+                    * No price, deliberately. The work in a photograph almost
+                    * never costs what the line item says: length, condition and
+                    * how long it took all move it. A figure here starts the
+                    * conversation at the counter with the customer feeling
+                    * misled, and the gallery's job is to make them want to come
+                    * in — the quote belongs to whoever can see their hair.
                     */}
                   {photo.service ? (
-                    <div className="mt-2 flex items-baseline justify-between gap-2">
-                      <span className="text-xs font-medium text-ink">{photo.service.name}</span>
-                      <span className="tnum shrink-0 text-xs text-glow-700">
-                        from {money(photo.service.price)}
-                      </span>
-                    </div>
+                    <p className="mt-2 text-xs font-medium text-ink">{photo.service.name}</p>
                   ) : null}
 
                   {/* The caption is the salon talking, not a filename. Left off
