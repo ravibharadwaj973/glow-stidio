@@ -64,6 +64,17 @@ export interface PhotoService {
 export interface GalleryPhoto {
   src: string;
   /**
+   * The same picture, big enough to open.
+   *
+   * The grid asks Cloudinary for a 900px crop, which is right for a tile and
+   * visibly soft filling a laptop screen. Rather than send everybody the large
+   * one on the chance they tap it, both URLs are built here and the lightbox
+   * asks for this one — so the grid stays cheap on a phone and the opened
+   * photograph is sharp. Absent for a source that has no resizer, where the
+   * lightbox falls back to `src`.
+   */
+  srcLarge?: string;
+  /**
    * What is in the picture, in a sentence.
    *
    * Required, as it is on every other picture on this site. Somebody choosing
@@ -166,6 +177,7 @@ function toPhoto(
 ): GalleryPhoto {
   return {
     src: cldUrl(image.publicId, { width: 900, cloudName }),
+    srcLarge: cldUrl(image.publicId, { width: 1600, cloudName }),
     alt: image.alt ?? `${collectionLabel} at ${SALON.name}`,
     caption: image.caption ?? undefined,
     shape: image.height > image.width ? 'portrait' : 'landscape',

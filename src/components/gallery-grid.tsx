@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Photo } from './photo';
+import { Lightbox } from './lightbox';
+import { ShortlistBar } from './shortlist-bar';
 import type { GalleryCollection } from '@/lib/gallery';
 import { track } from '@/lib/track';
 
@@ -24,11 +26,35 @@ import { track } from '@/lib/track';
  */
 export function GalleryGrid({ collections }: { collections: GalleryCollection[] }) {
   const [active, setActive] = useState<string>('all');
+  /** Which photograph is open, as an index into `flat`. Null is closed. */
+  const [open, setOpen] = useState<number | null>(null);
 
   const showing = active === 'all' ? collections : collections.filter((c) => c.key === active);
 
+  /**
+   * Every photograph currently on the page, in the order it appears.
+   *
+   * The lightbox's arrows walk this, so they move through exactly what the
+   * filter is showing — flicking through "Hair" stays in Hair, and flicking
+   * through "Everything" crosses from one collection into the next the same
+   * way scrolling does. Anything else and the arrows disagree with the page.
+   *
+   * Keyed on `collections` and `active` rather than `showing`, which is a new
+   * array on every render.
+   */
+  const flat = useMemo(
+    () => (active === 'all' ? collections : collections.filter((c) => c.key === active)).flatMap((c) => c.photos),
+    [collections, active],
+  );
+
+  /** src is already this grid's React key, so it is unique per photograph. */
+  const indexOf = useMemo(() => new Map(flat.map((photo, index) => [photo.src, index])), [flat]);
+
   const choose = (key: string, label: string) => {
     setActive(key);
+    // The open photograph's index belongs to the old filter. Keeping it open
+    // would show a different picture than the one they were looking at.
+    setOpen(null);
     // Which work a visitor looked at is the single most useful thing this page
     // knows. See lib/track.ts for what is and is not sent.
     track('gallery_filter', { collection: key }, label);
@@ -64,11 +90,27 @@ export function GalleryGrid({ collections }: { collections: GalleryCollection[] 
             <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
               {collection.photos.map((photo) => (
                 <figure key={photo.src} className="group">
-                  <Photo
-                    src={photo.src}
-                    alt={photo.alt}
-                    className={`w-full rounded-xl ${photo.shape === 'portrait' ? 'aspect-[4/5]' : 'aspect-[4/3]'}`}
-                  />
+                  {/**
+                    * The picture itself opens it.
+                    *
+                    * A button rather than a div with a click handler: this is
+                    * the page's main action, and it has to be reachable by
+                    * keyboard and announced as something that does something.
+                    * The alt text is already a sentence about the picture, so
+                    * the label reads properly when it is spoken aloud.
+                    */}
+                  <button
+                    type="button"
+                    onClick={() => setOpen(indexOf.get(photo.src) ?? 0)}
+                    aria-label={`Open larger: ${photo.alt}`}
+                    className="block w-full rounded-xl transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow-600"
+                  >
+                    <Photo
+                      src={photo.src}
+                      alt={photo.alt}
+                      className={`w-full rounded-xl ${photo.shape === 'portrait' ? 'aspect-[4/5]' : 'aspect-[4/3]'}`}
+                    />
+                  </button>
 
                   {/**
                     * WHAT IT IS, AND HOW TO GET IT. Not what it costs.
@@ -119,6 +161,14 @@ export function GalleryGrid({ collections }: { collections: GalleryCollection[] 
           </section>
         ))}
       </div>
+
+      {open !== null ? (
+        <Lightbox photos={flat} index={open} onMove={setOpen} onClose={() => setOpen(null)} />
+      ) : null}
+
+      {/* Renders nothing until something is on the list, so the page is not
+          carrying a bar around for a feature nobody has used yet. */}
+      <ShortlistBar />
     </>
   );
 }

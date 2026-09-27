@@ -125,22 +125,50 @@ export function Booking() {
         /**
          * PRE-SELECT WHAT THEY CAME FOR.
          *
-         * The gallery's "Book this" arrives as /#book?service=<id>. Without
-         * this, somebody who tapped a photograph of a balayage lands on an
-         * empty form and has to find balayage again in a list — which is the
+         * Two ways in, because there are two ways to leave the gallery:
+         *
+         *   ?service=<id>            one photograph's "Book this"
+         *   ?services=<id>,<id>,...  the shortlist's "Book together"
+         *
+         * Without this, somebody who tapped a photograph of a balayage lands on
+         * an empty form and has to find balayage again in a list — which is the
          * moment a good proportion of them give up, and the whole reason the
-         * link was worth putting under the picture.
+         * link was worth putting under the picture. For a shortlist it is worse
+         * still: they picked three services and the form has forgotten all of
+         * them.
          *
          * Read here rather than with useSearchParams so it happens once the
-         * menu exists: the id has to be matched against a real service, and
-         * matching it is also the validation — an id that is not on this
-         * salon's bookable menu is simply ignored rather than trusted.
+         * menu exists: every id is matched against a real service, and matching
+         * it IS the validation. These ids arrive from a URL anyone can type and
+         * from this browser's own storage, so an id that is not on this salon's
+         * bookable menu — retired, hidden from online booking, or invented — is
+         * silently dropped rather than trusted.
          */
-        const wanted = new URLSearchParams(window.location.search).get('service');
-        if (!wanted) return;
+        const params = new URLSearchParams(window.location.search);
+        const wanted = [
+          ...(params.get('services') ?? '').split(','),
+          ...(params.get('service') ? [params.get('service')!] : []),
+        ]
+          .map((id) => id.trim())
+          .filter(Boolean);
+        if (wanted.length === 0) return;
 
-        const found = categories.flatMap((category) => category.services).find((service) => service.id === wanted);
-        if (found) setChosen([found]);
+        const bookable = categories.flatMap((category) => category.services);
+        const found = wanted
+          .map((id) => bookable.find((service) => service.id === id))
+          .filter((service): service is MenuService => Boolean(service));
+
+        /**
+         * Deduped, and capped at the same six the shortlist allows.
+         *
+         * The slot finder looks for a gap as long as the sum of these, so a
+         * hand-typed URL with thirty ids would find no free time on any day and
+         * tell the customer the salon is booked solid.
+         */
+        const unique = found.filter(
+          (service, index) => found.findIndex((other) => other.id === service.id) === index,
+        );
+        if (unique.length > 0) setChosen(unique.slice(0, 6));
       })
       .catch((err: unknown) => {
         if (cancelled) return;
