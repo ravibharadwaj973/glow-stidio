@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Photo } from './photo';
@@ -29,29 +29,107 @@ export function GalleryGrid({ collections }: { collections: GalleryCollection[] 
   /** Which photograph is open, as an index into `flat`. Null is closed. */
   const [open, setOpen] = useState<number | null>(null);
 
-  const showing = active === 'all' ? collections : collections.filter((c) => c.key === active);
+  /**
+   * ARRIVING FROM A MESSAGE, POINTED AT ONE THING.
+   *
+   * A follow-up can send somebody to /gallery?service=<id> — "you had a cut,
+   * here is our hair spa work" — or ?category=<key> for a whole section. The
+   * point is that the link means something specific: a message that promises
+   * spa photographs and opens on the whole gallery has broken its promise
+   * before the customer has scrolled.
+   *
+   * Read from location.search in an effect rather than with useSearchParams,
+   * which would make this page render on demand and give up the caching the
+   * whole gallery depends on. Same reason the booking form reads it this way.
+   */
+  const [onlyService, setOnlyService] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    const service = params.get('service');
+    if (service) {
+      setOnlyService(service);
+      return;
+    }
+
+    const category = params.get('category');
+    if (category && collections.some((collection) => collection.key === category)) {
+      setActive(category);
+    }
+  }, [collections]);
+
+  /**
+   * The name of the service they were sent for, taken from the photographs
+   * themselves rather than trusted from the URL — the id in a link is just a
+   * string somebody could type.
+   */
+  const serviceName = useMemo(() => {
+    if (!onlyService) return null;
+    for (const collection of collections) {
+      for (const photo of collection.photos) {
+        if (photo.service?.id === onlyService) return photo.service.name;
+      }
+    }
+    return null;
+  }, [collections, onlyService]);
+
+  /**
+   * Reported once, on arrival, and only once the service is known to be real.
+   *
+   * This is the event that closes the loop the salon paid for: the follow-up
+   * suggested a hair spa, and this says the customer opened it. Reported as
+   * service_view because that is what it is — see lib/track.ts, and the note
+   * in the backend's engagement module about which events record an interest.
+   */
+  useEffect(() => {
+    if (!onlyService || !serviceName) return;
+    track('service_view', { serviceId: onlyService }, serviceName);
+  }, [onlyService, serviceName]);
+
+  /**
+   * What is on the page: the chosen section, narrowed to one service when the
+   * customer arrived from a link that named one.
+   *
+   * If that service has no photographs, the narrowing is abandoned and the
+   * whole gallery is shown. A page that answers "here is our hair spa work"
+   * with nothing at all is worse than one that shows everything — and
+   * serviceName comes back null in that case too, so the banner below never
+   * claims a filter that is not applied.
+   */
+  const showing = useMemo(() => {
+    const base = active === 'all' ? collections : collections.filter((c) => c.key === active);
+    if (!onlyService) return base;
+
+    const narrowed = base
+      .map((collection) => ({
+        ...collection,
+        photos: collection.photos.filter((photo) => photo.service?.id === onlyService),
+      }))
+      .filter((collection) => collection.photos.length > 0);
+
+    return narrowed.length > 0 ? narrowed : base;
+  }, [collections, active, onlyService]);
 
   /**
    * Every photograph currently on the page, in the order it appears.
    *
    * The lightbox's arrows walk this, so they move through exactly what the
-   * filter is showing — flicking through "Hair" stays in Hair, and flicking
-   * through "Everything" crosses from one collection into the next the same
-   * way scrolling does. Anything else and the arrows disagree with the page.
-   *
-   * Keyed on `collections` and `active` rather than `showing`, which is a new
-   * array on every render.
+   * page is showing — flicking through "Hair" stays in Hair, and a visitor
+   * sent to one service flicks through that service's work rather than
+   * wandering into the rest of the gallery.
    */
-  const flat = useMemo(
-    () => (active === 'all' ? collections : collections.filter((c) => c.key === active)).flatMap((c) => c.photos),
-    [collections, active],
-  );
+  const flat = useMemo(() => showing.flatMap((c) => c.photos), [showing]);
 
   /** src is already this grid's React key, so it is unique per photograph. */
   const indexOf = useMemo(() => new Map(flat.map((photo, index) => [photo.src, index])), [flat]);
 
   const choose = (key: string, label: string) => {
     setActive(key);
+    // Tapping a section clears a service narrowing. Without this, somebody
+    // sent to one service taps "Hair" and the page appears not to respond,
+    // because the service filter is still hiding everything they just asked for.
+    setOnlyService(null);
     // The open photograph's index belongs to the old filter. Keeping it open
     // would show a different picture than the one they were looking at.
     setOpen(null);
@@ -62,6 +140,33 @@ export function GalleryGrid({ collections }: { collections: GalleryCollection[] 
 
   return (
     <>
+      {/**
+        * SAY WHY THEY ARE SEEING A SUBSET, AND OFFER THE REST.
+        *
+        * Somebody arriving from "here is our hair spa work" should land on
+        * hair spa work — but a gallery that silently hides four fifths of
+        * itself looks like an empty salon. So the narrowing is stated, and
+        * leaving it is one tap.
+        */}
+      {onlyService && serviceName ? (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-glow-200 bg-glow-50 px-4 py-3">
+          <p className="text-sm text-ink">
+            Showing our <span className="font-medium">{serviceName}</span> work
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setOnlyService(null);
+              setOpen(null);
+              track('gallery_filter', { collection: 'all' }, 'Everything');
+            }}
+            className="text-xs font-medium text-glow-700 underline underline-offset-2"
+          >
+            See everything
+          </button>
+        </div>
+      ) : null}
+
       {collections.length > 1 ? (
         <div className="mb-10 flex flex-wrap gap-2" role="group" aria-label="Filter by service">
           <Chip label="Everything" active={active === 'all'} onClick={() => choose('all', 'Everything')} />
