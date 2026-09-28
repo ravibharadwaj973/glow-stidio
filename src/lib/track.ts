@@ -31,10 +31,17 @@ import { API_URL, SALON_SLUG } from './salon';
  *
  * ── WHAT IS SENT ─────────────────────────────────────────────────────────
  *
- * The link code, the page path, and the name of the thing that happened. No
- * cookies, no localStorage that outlives the tab, no device fingerprint, no
- * third party, no scroll or mouse recording. The salon's own API is the only
- * host contacted.
+ * The link code, the page path, and the name of the thing that happened.
+ *
+ * ONE first-party cookie, holding that link code and nothing else, for thirty
+ * days — the same window the API already treats a tapped link as identifying
+ * for. It is what lets a customer close the tab and come back on Wednesday
+ * without becoming a stranger. It identifies nobody who was not already
+ * identified by tapping the salon's own link.
+ *
+ * No third-party cookie, no localStorage, no device fingerprint, no scroll or
+ * mouse recording, no analytics script. The salon's own API is the only host
+ * contacted.
  *
  * The code is taken out of the address bar as soon as it is read, so a
  * customer who copies the link to a friend does not hand over a token that
@@ -46,8 +53,38 @@ import { API_URL, SALON_SLUG } from './salon';
 const STORAGE_KEY = 'parlon.pv';
 const SESSION_KEY = 'parlon.sid';
 
-/** sessionStorage throws in some private modes. Nothing here is worth a crash. */
+/**
+ * THE CODE OUTLIVES THE TAB, AND ONLY THE CODE.
+ *
+ * It used to live in sessionStorage, which dies when the tab closes. So a
+ * customer who tapped the salon's link on Monday, closed the tab, and came
+ * back on Wednesday to show the pictures to somebody was a stranger on
+ * Wednesday — none of it reached the salon, and the salon's own report of what
+ * their work gets opened for was quietly missing its most interested people.
+ *
+ * ── WHAT THIS DOES AND DOES NOT CHANGE ───────────────────────────────────
+ *
+ * It remembers an identification the customer already made by tapping a link
+ * the salon sent them. It does NOT start tracking anybody new: somebody who
+ * finds the salon on Google or types the address in still has no code, and no
+ * code still means no report. That line is unmoved.
+ *
+ * Thirty days, because that is already how long the API treats a tapped link
+ * as identifying — see identifiesUntil in the backend. A cookie outliving the
+ * window the server would honour anyway is a cookie kept for no reason.
+ *
+ * SameSite=Lax so it is not sent on cross-site requests, and Secure so it
+ * never travels in clear. First-party to the salon's own domain; no third
+ * party can read it, and nothing else is stored.
+ */
+const TOKEN_DAYS = 30;
+
 function readToken(): string | null {
+  // Cookie first: it is the one that survives the tab closing. sessionStorage
+  // stays as the fallback for a browser that refuses cookies but allows it.
+  const fromCookie = readCookie(STORAGE_KEY);
+  if (fromCookie) return fromCookie;
+
   try {
     return window.sessionStorage.getItem(STORAGE_KEY);
   } catch {
@@ -56,10 +93,36 @@ function readToken(): string | null {
 }
 
 function saveToken(code: string): void {
+  writeCookie(STORAGE_KEY, code, TOKEN_DAYS);
+
   try {
     window.sessionStorage.setItem(STORAGE_KEY, code);
   } catch {
     /* A visitor who blocks storage is simply not measured. */
+  }
+}
+
+function readCookie(name: string): string | null {
+  try {
+    const prefix = `${encodeURIComponent(name)}=`;
+    const hit = document.cookie.split('; ').find((row) => row.startsWith(prefix));
+    return hit ? decodeURIComponent(hit.slice(prefix.length)) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCookie(name: string, value: string, days: number): void {
+  try {
+    const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+    // Secure only where it can be honoured: a cookie marked Secure is dropped
+    // outright on http, which would silently break local development.
+    const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie =
+      `${encodeURIComponent(name)}=${encodeURIComponent(value)}` +
+      `; Path=/; Max-Age=${days * 24 * 60 * 60}; Expires=${expires}; SameSite=Lax${secure}`;
+  } catch {
+    /* Cookies refused. The sessionStorage fallback still covers this tab. */
   }
 }
 
