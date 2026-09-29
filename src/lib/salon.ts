@@ -29,6 +29,26 @@ export const SALON_SLUG = process.env.NEXT_PUBLIC_SALON_SLUG ?? '';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.jharavi.in/api/v1';
 
+/**
+ * WHERE THIS SITE LIVES, absolutely.
+ *
+ * Needed in three places that cannot use a relative path: robots.txt, the
+ * sitemap, and the og:image tag. A relative og:image is simply dropped by
+ * WhatsApp and every other link preview, which is the whole reason the
+ * preview was blank.
+ *
+ * Vercel sets VERCEL_PROJECT_PRODUCTION_URL on every deployment, so the
+ * fallback is right even before anyone sets a variable — and the last resort
+ * is the real domain rather than localhost, because a sitemap full of
+ * localhost URLs is worse than no sitemap.
+ */
+export const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : 'https://glow-stidio.vercel.app')
+).replace(/\/$/, '');
+
 /** Copy that belongs to the salon, not to the software. */
 export const SALON = {
   name: 'Glow Studio',

@@ -92,6 +92,30 @@ export function Booking() {
   const [startAt, setStartAt] = useState<string | null>(null);
 
   const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '', consent: true });
+
+  /**
+   * SPAM PROTECTION, WITHOUT A THIRD PARTY.
+   *
+   * A public form that writes into the salon's diary is worth protecting: a
+   * bot does not cost money here, it costs a morning, because somebody has to
+   * ring every fake booking to find out it is fake.
+   *
+   * Two cheap signals instead of a CAPTCHA — which would mean a third-party
+   * script, a consent problem, and a puzzle for every real customer:
+   *
+   *   `trap`  a field no human can see. Bots fill every input they find;
+   *           anything in here did not come from a person.
+   *   `openedAt`  when the form appeared. Filling a name, a phone number and
+   *           picking a time takes longer than a few seconds. A submission
+   *           faster than that was typed by a machine.
+   *
+   * Neither is a wall, and both are silent — a caught submission is told the
+   * booking went through and simply is not made, because an error message
+   * tells the author which signal to fix.
+   */
+  const [trap, setTrap] = useState('');
+  const openedAt = useRef(Date.now());
+  const MIN_FILL_MS = 4000;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<string | null>(null);
@@ -292,6 +316,21 @@ export function Booking() {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!branch || !startAt) return;
+
+    /**
+     * Silently accepted, never made. Deliberately indistinguishable from
+     * success: an author who is told WHY a submission failed learns which
+     * signal to defeat, and the next attempt gets through.
+     */
+    if (trap || Date.now() - openedAt.current < MIN_FILL_MS) {
+      setConfirmed(startAt);
+      return;
+    }
+
+    if (form.phone.replace(/\D/g, '').length < 10) {
+      setError('That phone number looks too short — we need it to confirm your booking.');
+      return;
+    }
 
     setBusy(true);
     setError(null);
@@ -642,6 +681,20 @@ export function Booking() {
               placeholder="Email (optional)"
               className={`${inputClass} sm:col-span-2`}
             />
+            {/* The trap. Hidden from people and from screen readers, left in
+                the tab order's way as little as possible; a bot filling every
+                field it can parse fills this one too. */}
+            <input
+              type="text"
+              name="website"
+              value={trap}
+              onChange={(event) => setTrap(event.target.value)}
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              className="pointer-events-none absolute left-[-9999px] h-0 w-0 opacity-0"
+            />
+
             <textarea
               value={form.notes}
               onChange={(event) => setForm((f) => ({ ...f, notes: event.target.value }))}
