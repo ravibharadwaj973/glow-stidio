@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SALON, SITE_URL } from '@/lib/salon';
 import { Arrival } from '@/components/arrival';
+import { type NavLink, SiteNav } from '@/components/site-nav';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -79,6 +80,20 @@ const STRUCTURED_DATA = {
   priceRange: '₹₹',
 };
 
+/**
+ * THE NAVIGATION, ONCE.
+ *
+ * Read by the row below and by the phone menu beside it. Kept in one place
+ * because two lists of the same links drift, and the one that goes stale is
+ * always the mobile one.
+ */
+const NAV: NavLink[] = [
+  { href: '/#services', label: 'Services' },
+  { href: '/gallery', label: 'Our work' },
+  { href: '/#team', label: 'Our team' },
+  { href: '/#visit', label: 'Visit us' },
+];
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -95,23 +110,31 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             from one of the salon's own messages — see lib/track.ts. */}
         <Arrival />
 
-        <header className="sticky top-0 z-40 border-b border-stone-200/70 bg-sand/70 backdrop-blur-md">
-          <div className="mx-auto flex max-w-6xl items-center gap-6 px-5 py-4">
+        {/* `relative` so the phone menu can hang off the bottom of this header
+            whatever height it ends up being — see components/site-nav.tsx. */}
+        <header className="sticky top-0 z-40 border-b border-stone-200/70 bg-sand/70 backdrop-blur-md relative">
+          <div className="mx-auto flex max-w-6xl items-center gap-4 px-5 py-4 sm:gap-6">
             <Link href="/" className="display text-2xl tracking-tight">
               {SALON.name}
             </Link>
+
             <nav className="ml-auto hidden items-center gap-7 text-sm text-ink-muted sm:flex">
-              <Link href="/#services" className="hover:text-ink">Services</Link>
-              <Link href="/gallery" className="hover:text-ink">Our work</Link>
-              <Link href="/#team" className="hover:text-ink">Our team</Link>
-              <Link href="/#visit" className="hover:text-ink">Visit us</Link>
+              {NAV.map((link) => (
+                <Link key={link.href} href={link.href} className="hover:text-ink">
+                  {link.label}
+                </Link>
+              ))}
             </nav>
-            <Link
-              href="/#book"
-              className="btn-primary ml-auto h-10 px-6 sm:ml-0"
-            >
-              Book
-            </Link>
+
+            {/* Book stays in the header at every width. It is what somebody on a
+                phone came here to do, and putting it behind a menu button costs
+                more than the space it takes. */}
+            <div className="ml-auto flex items-center gap-1 sm:ml-0">
+              <Link href="/#book" className="btn-primary h-10 px-5 sm:px-6">
+                Book
+              </Link>
+              <SiteNav links={NAV} phone={SALON.phone} />
+            </div>
           </div>
         </header>
 

@@ -71,6 +71,31 @@
   }
 
   /**
+   * The phone menu arriving.
+   *
+   * 140ms is under the threshold at which a panel feels like it is waiting for
+   * you, and the 4px slide gives it a direction — it comes from the header it
+   * belongs to rather than materialising over the page.
+   *
+   * Honours "reduce motion": somebody who has asked the system for less movement
+   * gets the panel with no slide at all, which is the whole point of the setting.
+   */
+  .nav-drop {
+    animation: nav-drop 140ms ease-out;
+  }
+  @keyframes nav-drop {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nav-drop {
+      animation: none;
+    }
+  }
+
+  /**
    * Where a photograph goes.
    *
    * Deliberately a warm gradient wash rather than a grey box or a stock photo
